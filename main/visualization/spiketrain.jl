@@ -15,10 +15,10 @@ export draw_spiketrain_figure, get_spiketrain_figure
     )
 """
 function draw_spiketrain_figure(args...; kwargs...)
-    (f, colors) = get_spiketrain_figure(args...; kwargs...)
+    f = get_spiketrain_figure(args...; kwargs...)
     display(f)
 
-    return (f, colors)
+    return f
 end
 
 function get_spiketrain_figure(
@@ -34,7 +34,7 @@ function get_spiketrain_figure(
 
     draw_spiketrain!(ax, spiketrains, names, colors, time)
 
-    return (f, colors)
+    return f
 end
 
 function draw_spiketrain!(ax, spiketrains, names, colors, time)
@@ -56,7 +56,7 @@ function draw_spiketrain!(ax, spiketrains, names, colors, time)
     ax.yticks = (ypositions[1:length(names)], names)
     ax.yticklabelcolor[] = colors
 
-    return colors
+    return nothing
 end
 
 function draw_single_spiketrain!(ax, spiketimes::Vector{Float64}, ypos, height, current_time, color=RGB(0, 0, 0))
