@@ -11,7 +11,9 @@ export draw_spiketrain_figure, get_spiketrain_figure
         colors=Color[], # Vector of colors for the first `length(colors)` spiketrains
         resolution=(1280, 720),
         figure_title="Spiketrain",
-        time=0.
+        time=0.,
+        xmin=nothing,
+        xmax=nothing
     )
 """
 function draw_spiketrain_figure(args...; kwargs...)
@@ -27,17 +29,18 @@ function get_spiketrain_figure(
     colors=Color[], # Vector of colors for the first `length(colors)` spiketrains
     resolution=(1280, 720),
     figure_title="Spiketrain",
-    time=0.
+    time=0.,
+    xmin=nothing, xmax=nothing # min and max displayed x value
 )
     f = Figure(;resolution)
     ax = f[1, 1] = Axis(f; title = figure_title)
 
-    draw_spiketrain!(ax, spiketrains, names, colors, time)
+    draw_spiketrain!(ax, spiketrains, names, colors, time, xmin, xmax)
 
     return f
 end
 
-function draw_spiketrain!(ax, spiketrains, names, colors, time)
+function draw_spiketrain!(ax, spiketrains, names, colors, time, xmin, xmax)
     hideydecorations!(ax, ticklabels=false)
 
     # set neuron names on axis label
@@ -51,6 +54,7 @@ function draw_spiketrain!(ax, spiketrains, names, colors, time)
         draw_single_spiketrain!(ax, spiketrain, pos, trainheight, time, color)
     end
 
+    xlims!(ax, compute_xlims(spiketrains, xmin, xmax))
     ylims!(ax, (first(ypositions) - 1, last(ypositions) + 1))
     println("Set ylims to $((first(ypositions) - 1, last(ypositions) + 1))")
     ax.yticks = (ypositions[1:length(names)], names)
@@ -58,6 +62,13 @@ function draw_spiketrain!(ax, spiketrains, names, colors, time)
 
     return nothing
 end
+
+infmin(vec) = isempty(vec) ? Inf : minimum(vec)
+infmax(vec) = isempty(vec) ? -Inf : maximum(vec)
+compute_xlims(trains, xmin, xmax) = (
+    isnothing(xmin) ? minimum(map(infmin, trains)) : xmin,
+    isnothing(xmax) ? maximum(map(infmax, trains)) : xmax
+)
 
 function draw_single_spiketrain!(ax, spiketimes::Vector{Float64}, ypos, height, current_time, color=RGB(0, 0, 0))
     y1 = ypos - height/2; y2 = ypos + height/2
