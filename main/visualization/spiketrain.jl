@@ -56,7 +56,6 @@ function draw_spiketrain!(ax, spiketrains, names, colors, time, xmin, xmax)
 
     xlims!(ax, compute_xlims(spiketrains, xmin, xmax))
     ylims!(ax, (first(ypositions) - 1, last(ypositions) + 1))
-    println("Set ylims to $((first(ypositions) - 1, last(ypositions) + 1))")
     ax.yticks = (ypositions[1:length(names)], names)
     ax.yticklabelcolor[] = colors
 
@@ -70,7 +69,8 @@ compute_xlims(trains, xmin, xmax) = (
     isnothing(xmax) ? maximum(map(infmax, trains)) : xmax
 )
 
-function draw_single_spiketrain!(ax, spiketimes::Vector{Float64}, ypos, height, current_time, color=RGB(0, 0, 0))
+function draw_single_spiketrain!(ax, spiketimes, ypos, height, current_time, color=RGB(0, 0, 0))
+    @assert all(t isa Real for t in spiketimes) "a spiketimes vector (for a single y position) is not a vector of real numbers"
     y1 = ypos - height/2; y2 = ypos + height/2
     times = vcat([
         [Point2f0(t - current_time, y1), Point2f0(t - current_time, y2)]
