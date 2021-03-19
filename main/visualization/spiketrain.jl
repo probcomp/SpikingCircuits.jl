@@ -42,6 +42,9 @@ end
 
 function draw_spiketrain!(ax, spiketrains, names, colors, time, xmin, xmax)
     hideydecorations!(ax, ticklabels=false)
+    if isempty(spiketrains) 
+        return nothing;
+    end
 
     # set neuron names on axis label
     ypositions = 1:length(spiketrains)
