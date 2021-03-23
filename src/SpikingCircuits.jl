@@ -27,8 +27,9 @@ using Distributions: Exponential
 exponential(rate) = rand(Exponential(1/rate))
 include("on_off_poisson_neuron.jl")
 include("integrating_poisson.jl")
+include("input_function_poisson.jl")
 
 export Spiking, SpikingSimulator, SpikeWire
-export OnOffPoissonNeuron, IntegratingPoisson
+export OnOffPoissonNeuron, IntegratingPoisson, InputFunctionPoisson
 
 end # module
