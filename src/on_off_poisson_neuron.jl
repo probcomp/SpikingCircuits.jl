@@ -7,6 +7,9 @@ end
 Circuits.inputs(::OnOffPoissonNeuron) = CompositeValue((on=SpikeWire(), off=SpikeWire()))
 Circuits.outputs(::OnOffPoissonNeuron) = CompositeValue((out=SpikeWire(),))
 
+Base.:(==)(a::OnOffPoissonNeuron, b::OnOffPoissonNeuron) = a.rate == b.rate
+Base.hash(a::OnOffPoissonNeuron, h::UInt) = hash(a.rate, h)
+
 Sim.initial_state(::OnOffPoissonNeuron) = OnOffState(false)
 
 Sim.next_spike(::OnOffPoissonNeuron, t::NextSpikeTrajectory) = :out
