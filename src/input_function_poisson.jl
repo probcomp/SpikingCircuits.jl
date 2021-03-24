@@ -70,8 +70,8 @@ function Sim.extend_trajectory(p::InputFunctionPoisson, st::InputTimesState, ::S
     time_to_outspike = _sample_spike(p, st)
     elapsed_time = 0.
     while time_to_removal(st, p.memories) < time_to_outspike + elapsed_time
-        st = advance(st, time_to_removal(st, p.memories), p.memories)
         elapsed_time += time_to_removal(st, p.memories)
+        st = advance(st, time_to_removal(st, p.memories), p.memories)
         time_to_outspike = _sample_spike(p, st)
     end
     Sim.NextSpikeTrajectory(time_to_outspike + elapsed_time)
