@@ -29,7 +29,10 @@ include("on_off_poisson_neuron.jl")
 include("integrating_poisson.jl")
 include("input_function_poisson.jl")
 
+include("spiketrain_viz.jl")
+
 export Spiking, SpikingSimulator, SpikeWire
 export OnOffPoissonNeuron, IntegratingPoisson, InputFunctionPoisson
+export SpiketrainViz
 
 end # module
