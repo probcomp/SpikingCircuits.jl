@@ -327,7 +327,12 @@ function simulate_for_time(
     end
 
     for input in initial_inputs
-        (s, t, output_names) = receive_input_spike(c, s, t, input, itr -> filtered_callback(itr, 0.))
+        (s, t, output_names) = try
+            receive_input_spike(c, s, t, input, itr -> filtered_callback(itr, 0.))
+        catch e
+            @error("Error encountered when sending in initial input $input.")
+            error(e)
+        end
         filtered_callback(Iterators.flatten((
             ((nothing, InputSpike(input)),),
             ((nothing, OutputSpike(n)) for n in output_names)
@@ -387,6 +392,7 @@ end
 
 # TODO: I should probably just use the mutable versions everywhere; no need for immutability, except
 # checking if the old state equals the current state when outputting `Event`s.
+mutable_version(::Tuple{}) = []
 mutable_version(t::Tuple) = Vector{general_type(t)}(collect(t))
 mutable_version(n::NamedTuple) = OrderedDict{Symbol, general_type(n)}(pairs(n))
 immutable_version(v::Vector) = Tuple(v)
@@ -452,6 +458,11 @@ end
 function extend_trajectory(c::CompositeComponent, s::CompositeState, t::CompositeTrajectory)
     extended = map(extend_trajectory, c.subcomponents, s.substates, t.subtrajectories)
     times = map(trajectory_length, extended)
+    if isempty(times) # if there are no subcomponents, there's nothing to do - just return the empty trajectory which must have been passed in
+        @assert length(c.subcomponents) == 0
+        @assert t.trajectory_length == 0 "A CompositeComponent with no subcomponents should have a length-0 trajectory"
+        return t
+    end
     mintime = minimum(times)
     at_min_time = (name for name in keys(c.subcomponents) if times[name] == mintime)
     outputted_spikes = Iterators.filter(
