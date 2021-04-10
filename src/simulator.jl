@@ -291,7 +291,7 @@ end
 # TODO: more general method with a way to give input spikes during the simulation
 
 """
-    simulate_for_time(c::Component, ΔT, callback, s::State=initial_state(c), t::Trajectory=empty_trajectory(c);
+    simulate_for_time(callback, c::Component, ΔT, s::State=initial_state(c), t::Trajectory=empty_trajectory(c);
         initial_inputs=(), event_filter=((compname, event)->true)
     )
 
