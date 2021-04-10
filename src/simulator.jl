@@ -456,13 +456,14 @@ function first_pair_with_nonnothing_value(itr) # helper function
     return nothing
 end
 function extend_trajectory(c::CompositeComponent, s::CompositeState, t::CompositeTrajectory)
+    # If there are no subcomponents, this will never emit an output spike (unless just passing through an input),
+    # so we can extend to `Inf` (until we receive an input spike)
+    if isempty(c.subcomponents)
+        return CompositeTrajectory((), Inf, false, nothing)
+    end
+
     extended = map(extend_trajectory, c.subcomponents, s.substates, t.subtrajectories)
     times = map(trajectory_length, extended)
-    if isempty(times) # if there are no subcomponents, there's nothing to do - just return the empty trajectory which must have been passed in
-        @assert length(c.subcomponents) == 0
-        @assert t.trajectory_length == 0 "A CompositeComponent with no subcomponents should have a length-0 trajectory"
-        return t
-    end
     mintime = minimum(times)
     at_min_time = (name for name in keys(c.subcomponents) if times[name] == mintime)
     outputted_spikes = Iterators.filter(
