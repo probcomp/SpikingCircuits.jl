@@ -330,8 +330,8 @@ function simulate_for_time(
         (s, t, output_names) = try
             receive_input_spike(c, s, t, input, itr -> filtered_callback(itr, 0.))
         catch e
-            @error("Error encountered when sending in initial input $input.")
-            error(e)
+            @error("Error encountered when sending in initial input $input.", exception=(e, catch_backtrace()))
+            throw(e)
         end
         filtered_callback(Iterators.flatten((
             ((nothing, InputSpike(input)),),
