@@ -65,7 +65,11 @@ Sim.initial_state(p::InputFunctionPoisson) = InputTimesState(
 )
 Sim.next_spike(::InputFunctionPoisson, ::Sim.NextSpikeTrajectory) = :out
 
-_sample_spike(p::InputFunctionPoisson, st::InputTimesState) = exponential(rate(p, st))
+_sample_spike(p::InputFunctionPoisson, st::InputTimesState) =
+    let λ = rate(p, st)
+        λ == Inf ? 0. : exponential(λ)
+    end
+
 function Sim.extend_trajectory(p::InputFunctionPoisson, st::InputTimesState, ::Sim.EmptyTrajectory)
     time_to_outspike = _sample_spike(p, st)
     elapsed_time = 0.
