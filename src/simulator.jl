@@ -333,10 +333,6 @@ function simulate_for_time(
             @error("Error encountered when sending in initial input $input.", exception=(e, catch_backtrace()))
             throw(e)
         end
-        filtered_callback(Iterators.flatten((
-            ((nothing, InputSpike(input)),),
-            ((nothing, OutputSpike(n)) for n in output_names)
-        )), 0.)
     end
 
     time_passed = 0.
