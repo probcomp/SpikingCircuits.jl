@@ -253,13 +253,14 @@ and so `f` is only called for events occurring at the top level to `c` (ie. outp
 """
 function advance_time_by(c::Component, s::State, t::Trajectory, ΔT, f::Function)
     (newstate, t, son) = advance_time_by(c, s, t, ΔT)
-    f(
-        Iterators.flatten((
-            ((nothing, OutputSpike(name)) for name in son),
-            newstate == s ? () : ((nothing, StateChange(newstate)),)
-        )),
-        ΔT
-    )
+    f(((nothing, OutputSpike(name)) for name in son), ΔT)
+    # f(
+    #     Iterators.flatten((
+    #         ((nothing, OutputSpike(name)) for name in son),
+    #         newstate == s ? () : ((nothing, StateChange(newstate)),)
+    #     )),
+    #     ΔT
+    # )
 
     return (newstate, t, son)
 end
@@ -281,8 +282,8 @@ function receive_input_spike(c::Component, s::State, t::Trajectory, inname, f::F
     f(
         Iterators.flatten((
             ((nothing, InputSpike(inname)),),
-            ((nothing, OutputSpike(name)) for name in son),
-            newstate == s ? () : ((nothing, StateChange(newstate)),)
+            ((nothing, OutputSpike(name)) for name in son) #,
+            # newstate == s ? () : ((nothing, StateChange(newstate)),)
         ))
     )
 
@@ -399,7 +400,11 @@ function simulate_for_time_and_get_events(args...;
         end
     )
 
-    simulate_for_time(callback, args...; kwargs...)
+    try
+        simulate_for_time(callback, args...; kwargs...)
+    catch e
+        @error("Simulation terminated due to exception.", exception=(e, catch_backtrace()))
+    end
 
     return events
 end
@@ -543,10 +548,11 @@ function advance_time_by(c::CompositeComponent, s::CompositeState, t::CompositeT
     new_state = CompositeState(immutable_version(advanced_states))
 
     # callback
-    f(Iterators.flatten((
-        ((nothing, OutputSpike(name)) for name in outspikes),
-        s == new_state ? () : ((nothing, StateChange(new_state)),)
-    )), ΔT)
+    # f(Iterators.flatten((
+    #     ((nothing, OutputSpike(name)) for name in outspikes),
+    #     s == new_state ? () : ((nothing, StateChange(new_state)),)
+    # )), ΔT)
+    f(((nothing, OutputSpike(name)) for name in outspikes), ΔT)
 
     return (
         new_state,
