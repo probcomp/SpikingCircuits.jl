@@ -39,6 +39,7 @@ at the same instant, we instead sequence them with some tiny ϵ-milisecond delay
 """
 module SpikingSimulator
 
+using Printf: @sprintf
 using DataStructures: OrderedDict, Queue, enqueue!, dequeue!
 import Circuits: Component, PrimitiveComponent, CompositeComponent
 import Circuits: Output, Input, CompOut, CompIn, NodeName, receivers, does_output
@@ -351,26 +352,52 @@ function simulate_for_time(
     return nothing
 end
 
+default_log_str(time, compname, event) =
+    let timestr = @sprintf("%.4f", time)
+        "$timestr : $compname $event"
+    end
+
 """
     simulate_for_time_and_get_events(c::Component, ΔT, s::State=initial_state(c), t::Trajectory=empty_trajectory(c);
-        initial_inputs=(), event_filter=((compname, evt)->true)
+        log_filter=((_,_,_)->true), log=false, log_str=default_log_str, initial_inputs=(), event_filter=((compname, evt)->true)
     )
 
 Same as `simulate_for_time`, but returns a vector of triples `(time, component_name, event)`
 giving the events which occurred for `c` and subcomponents during the simulation,
 instead of using a callback function.
+    
+If `log` is true, will log every `(time, compname, event)` triple which passes `log_filter`.
+The logging reports the string returned by `log_str(time, compname, event)`.
 
 See also: `simulate_for_time`.
 """
-function simulate_for_time_and_get_events(args...; kwargs...)
+function simulate_for_time_and_get_events(args...;
+    log_filter=((_,_,_) -> true), log=false,
+    log_str=default_log_str,
+    kwargs...
+)
     events = Tuple{Float64, Union{Nothing, Name}, Event}[]
 
     # function to add events to the array
-    function callback(itr, time)
-        for (compname, event) in itr
-            push!(events, (time, compname, event))
+    callback = (
+        if !log
+            (itr, time) -> begin
+                for (compname, event) in itr
+                    push!(events, (time, compname, event))
+                end
+            end
+        else
+            (itr, time) -> begin
+                for (compname, event) in itr
+                    push!(events, (time, compname, event))
+                    
+                    if log_filter(time, compname, event)
+                        @info log_str(time, compname, event)
+                    end    
+                end
+            end
         end
-    end
+    )
 
     simulate_for_time(callback, args...; kwargs...)
 
