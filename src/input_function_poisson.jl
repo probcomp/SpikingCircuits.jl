@@ -70,7 +70,7 @@ _sample_spike(p::InputFunctionPoisson, st::InputTimesState) =
         λ == Inf ? 0. : exponential(λ)
     end
 
-function Sim.extend_trajectory(p::InputFunctionPoisson, st::InputTimesState, ::Sim.EmptyTrajectory)
+function Sim.extend_trajectory!(p::InputFunctionPoisson, st::InputTimesState, ::Sim.EmptyTrajectory)
     time_to_outspike = _sample_spike(p, st)
     elapsed_time = 0.
     while time_to_removal(st, p.memories) < time_to_outspike + elapsed_time
@@ -81,9 +81,9 @@ function Sim.extend_trajectory(p::InputFunctionPoisson, st::InputTimesState, ::S
     Sim.NextSpikeTrajectory(time_to_outspike + elapsed_time)
 end
 
-Sim.extend_trajectory(::InputFunctionPoisson, ::InputTimesState, t::Sim.NextSpikeTrajectory) = t
+Sim.extend_trajectory!(::InputFunctionPoisson, ::InputTimesState, t::Sim.NextSpikeTrajectory) = t
 
-Sim.advance_time_by(p::InputFunctionPoisson, st::InputTimesState, t::Sim.NextSpikeTrajectory, ΔT) =
+Sim.advance_time_by!(p::InputFunctionPoisson, st::InputTimesState, t::Sim.NextSpikeTrajectory, ΔT) =
     (
         advance(st, ΔT, p.memories),
         (let remaining_time = t.time_to_next_spike - ΔT
@@ -97,7 +97,7 @@ Sim.advance_time_by(p::InputFunctionPoisson, st::InputTimesState, t::Sim.NextSpi
         end)...
     )
 
-Sim.receive_input_spike(p::InputFunctionPoisson, st::InputTimesState, ::Sim.Trajectory, inidx) =
+Sim.receive_input_spike!(p::InputFunctionPoisson, st::InputTimesState, ::Sim.Trajectory, inidx) =
     let new_st = receive_spike(st, inidx)
         if rate(p, new_st) == Inf
             prev_rate_msg = rate(p, st) == Inf ? " (In this case, the rate was Inf before this spike was received as well.) " : ""

@@ -27,17 +27,17 @@ Sim.next_spike(::IntegratingPoisson, ::Sim.NextSpikeTrajectory) = :out
 Base.:(==)(a::IntegratingPoisson, b::IntegratingPoisson) = a.weights == b.weights && a.bias == b.bias && a.rate_fn == b.rate_fn
 Base.hash(a::IntegratingPoisson, h::UInt) = hash(a.weights, hash(a.bias, hash(a.rate_fn, h)))
 
-function Sim.extend_trajectory(p::IntegratingPoisson, st::PotentialState, ::Sim.EmptyTrajectory)
+function Sim.extend_trajectory!(p::IntegratingPoisson, st::PotentialState, ::Sim.EmptyTrajectory)
     rate = p.rate_fn(st.potential)
     @assert rate >= 0 "IntegratingPoisson rate_fn returned a negative value!  Rates must be nonnegative."
     return NextSpikeTrajectory(exponential(rate))
 end
-Sim.extend_trajectory(::IntegratingPoisson, ::PotentialState, t::Sim.NextSpikeTrajectory) = t
+Sim.extend_trajectory!(::IntegratingPoisson, ::PotentialState, t::Sim.NextSpikeTrajectory) = t
 
-Sim.advance_time_by(::IntegratingPoisson, s::PotentialState, t::NextSpikeTrajectory, ΔT) =
+Sim.advance_time_by!(::IntegratingPoisson, s::PotentialState, t::NextSpikeTrajectory, ΔT) =
     Sim.advance_without_statechange(s, t, ΔT)
 
-Sim.receive_input_spike(p::IntegratingPoisson, s::PotentialState, ::Sim.Trajectory, inidx) =
+Sim.receive_input_spike!(p::IntegratingPoisson, s::PotentialState, ::Sim.Trajectory, inidx) =
     let new_potential = s.potential + p.weights[inidx]
         if p.rate_fn(new_potential) == Inf
             prev_rate_msg = p.rate_fn(s.potential) == Inf ? " (In this case, the rate was Inf before this spike was received as well.) " : ""
