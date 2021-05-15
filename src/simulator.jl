@@ -293,15 +293,26 @@ function receive_input_spike!(c::Component, s::State, t::Trajectory, inname, f::
     return (newstate, t, son)
 end
 
-# TODO: more general method with a way to give input spikes during the simulation
+# TODO: more general method with a way to give input spikes during the simulation.
+# The main desideratum at this point is the ability to see the output spikes
+# before deciding what the next input spikes are going to be.
+# (This could probably be accomplished in a somewhat hacky way using the `inputs` iterator,
+# but it would be better to have a well-designed mechanism.)
 
 """
     simulate_for_time(callback, c::Component, ΔT, s::State=initial_state(c), t::Trajectory=empty_trajectory(c);
-        initial_inputs=(), event_filter=((compname, event)->true)
+        inputs=(), event_filter=((compname, event)->true)
     )
 
-Simulates the component for `ΔT` milliseconds.  Begins the simulation by feeding a spike to each input in `c`
-whose name is in the iterator `initial_inputs`.
+Simulates the component for `ΔT` milliseconds.
+    
+To send inputs into the circuit, a kwarg `inputs` may be provided.
+This should be an iterator over `(time, itr)` pairs ordered by time,
+where `itr` is an iterator over input names where a spike should be delivered at time `time` into the simulation.
+(If an input name appears N times, N spikes will be delivered to that input.)
+
+If all inputs should be delivered at time=0, instead of `inputs`, one can use kwarg `initial_inputs`
+to provide an iterator over the input names to deliver spikes to at t=0.
 
 Calls `callback(itr, time)` at every time since the start of the simulation
 when any `Event`s occur occur for `c` or one of its subcomponents.
@@ -320,7 +331,7 @@ back into `c`'s inputs.  If recurrent connections are needed, nest the recurrent
 """
 function simulate_for_time(
     callback, c::Component, ΔT, s::State=initial_state(c), t::Trajectory=empty_trajectory(c);
-    initial_inputs=(), event_filter=((compname, event)->true)
+    initial_inputs=(), inputs=[(0., initial_inputs)], event_filter=((compname, event)->true)
 )
     function filtered_callback(itr, dt)
         if dt <= ΔT # only track events before the time limit
@@ -331,15 +342,7 @@ function simulate_for_time(
         end
     end
 
-    for input in initial_inputs
-        (s, t, output_names) = try
-            receive_input_spike!(c, s, t, input, itr -> filtered_callback(itr, 0.))
-        catch e
-            @error("Error encountered when sending in initial input $input.", exception=(e, catch_backtrace()))
-            throw(e)
-        end
-    end
-
+    next_inputs, inputs = isempty(inputs) ? ((Inf, ()), ()) : Iterators.peel(inputs)
     time_passed = 0.
     while time_passed < ΔT
         t = extend_trajectory!(c, s, t)
@@ -348,13 +351,34 @@ function simulate_for_time(
         if trajectory_length(t) == Inf
             break;
         end
+        if trajectory_length(t) > next_inputs[1]
+            extending_by = next_inputs[1]
+            (s, t, _) = advance_time_by!(c, s, t, extending_by, (itr, t) -> filtered_callback(itr, t + time_passed))
+            for input in next_inputs[2]
+                (s, t, _) =
+                    try
+                        receive_input_spike!(c, s, t, input, itr -> filtered_callback(itr, next_inputs[1]))
+                    catch e
+                        @error("Error encountered when sending in input $input at time $(next_inputs[1]).", exception=(e, catch_backtrace()))
+                        throw(e)
+                    end
+            end
 
-        (s, t, _) = advance_time_by!(c, s, t, trajectory_length(t), (itr, t) -> filtered_callback(itr, t + time_passed))
+            next_inputs, inputs = isempty(inputs) ? ((Inf, ()), ()) : Iterators.peel(inputs)
+        else
+            (s, t, _) = advance_time_by!(c, s, t, trajectory_length(t), (itr, t) -> filtered_callback(itr, t + time_passed))
+        end
         time_passed += extending_by
     end
 
     return nothing
 end
+# simulate_for_time(
+#     callback, c::Component, ΔT, s::State=initial_state(c), t::Trajectory=empty_trajectory(c);
+#     initial_inputs, event_filter=((compname, event)->true)
+# ) = simulate_for_time(callback, c, ΔT, s, t;
+#     inputs = [(0, initial_inputs)], event_filter
+# )
 
 default_log_str(time, compname, event) =
     let timestr = @sprintf("%.4f", time)
@@ -363,7 +387,7 @@ default_log_str(time, compname, event) =
 
 """
     simulate_for_time_and_get_events(c::Component, ΔT, s::State=initial_state(c), t::Trajectory=empty_trajectory(c);
-        log_filter=((_,_,_)->true), log=false, log_str=default_log_str, initial_inputs=(), event_filter=((compname, evt)->true)
+        log_filter=((_,_,_)->true), log=false, log_str=default_log_str, [inputs=() | initial_inputs=()], event_filter=((compname, evt)->true)
     )
 
 Same as `simulate_for_time`, but returns a vector of triples `(time, component_name, event)`
