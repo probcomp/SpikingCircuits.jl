@@ -351,9 +351,11 @@ function simulate_for_time(
         if trajectory_length(t) == Inf
             break;
         end
-        if trajectory_length(t) > next_inputs[1]
-            extending_by = next_inputs[1]
-            (s, t, _) = advance_time_by!(c, s, t, extending_by, (itr, t) -> filtered_callback(itr, t + time_passed))
+        time_to_next_input = next_inputs[1] - time_passed
+        @assert time_to_next_input ≥ 0.
+        if trajectory_length(t) > time_to_next_input
+            extending_by = time_to_next_input
+            (s, t, _) = advance_time_by!(c, s, t, time_to_next_input, (itr, t) -> filtered_callback(itr, t + time_passed))
             for input in next_inputs[2]
                 (s, t, _) =
                     try
@@ -365,6 +367,7 @@ function simulate_for_time(
             end
 
             next_inputs, inputs = isempty(inputs) ? ((Inf, ()), ()) : Iterators.peel(inputs)
+            println("Just delivered inputs at time $(time_passed + time_to_next_input).  Next inputs delivered at time $(next_inputs[1]).")
         else
             (s, t, _) = advance_time_by!(c, s, t, trajectory_length(t), (itr, t) -> filtered_callback(itr, t + time_passed))
         end
@@ -499,7 +502,7 @@ function extend_trajectory!(c::CompositeComponent, s::CompositeState, t::Composi
     # If there are no subcomponents, this will never emit an output spike (unless just passing through an input),
     # so we can extend to `Inf` (until we receive an input spike)
     if isempty(c.subcomponents)
-        return CompositeTrajectory((), Inf, false, nothing)
+        return CompositeTrajectory([], Inf, false, nothing)
     end
 
     trajectories = t.subtrajectories
@@ -508,7 +511,11 @@ function extend_trajectory!(c::CompositeComponent, s::CompositeState, t::Composi
 
     # extend trajectories & note which 
     for (key, subcomp) in pairs(c.subcomponents)
-        new_traj = extend_trajectory!(subcomp, s.substates[key], trajectories[key])
+        new_traj = try
+             extend_trajectory!(subcomp, s.substates[key], trajectories[key])
+        catch e
+            @error "Error when extending traj for  $key" exception=(e, catch_backtrace())
+        end
         trajectories[key] = new_traj
         tl = trajectory_length(new_traj)
         if tl < mintime
