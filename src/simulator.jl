@@ -101,10 +101,10 @@ next_spike(::Component, ::Trajectory) = error("Not implemented.")
 """
     extended_trajectory = extend_trajectory!(::Component, ::State, old_trajectory::Trajectory)
 
-Return a new trajectory for the component such that `length(extended_trajectory) > length(old_trajectory)`.
+Return a new trajectory for the component such that `trajectory_length(extended_trajectory) > trajectory_length(old_trajectory)`.
 May mutate `old_trajectory`.
 
-Input condition: `next_spike(old_trajectory)` must be `nothing`.  Ie. we cannot extend a trajectory
+Input condition: `next_spike(::Component, old_trajectory)` must be `nothing`.  Ie. we cannot extend a trajectory
 past the next output spike.
 """
 extend_trajectory!(::Component, ::State, ::Trajectory) = error("Not implemented.")
@@ -347,13 +347,15 @@ function simulate_for_time(
     while time_passed < ΔT
         t = extend_trajectory!(c, s, t)
         extending_by = trajectory_length(t)
+        # println("Extended by $extending_by")
 
         if trajectory_length(t) == Inf
             break;
         end
         time_to_next_input = next_inputs[1] - time_passed
         @assert time_to_next_input ≥ 0.
-        if trajectory_length(t) > time_to_next_input
+        if trajectory_length(t) ≥ time_to_next_input
+            # println("Feeding in input[s] $(next_inputs[2])")
             extending_by = time_to_next_input
             (s, t, _) = advance_time_by!(c, s, t, time_to_next_input, (itr, t) -> filtered_callback(itr, t + time_passed))
             for input in next_inputs[2]
@@ -485,6 +487,7 @@ end
 to_mutable_version_map(f, t::Tuple, T) = T[f(x) for x in t]
 to_mutable_version_map(f, nt::NamedTuple, T) = Dict{Symbol, T}(key => f(val) for (key, val) in pairs(nt))
 
+# state_type(...)
 initial_state(c::CompositeComponent) = CompositeState(to_mutable_version_map(initial_state, c.subcomponents, State))
 empty_trajectory(c::CompositeComponent) = CompositeTrajectory(to_mutable_version_map(empty_trajectory, c.subcomponents, Trajectory), 0.0, false, nothing)
 trajectory_length(t::CompositeTrajectory) = t.trajectory_length
@@ -502,7 +505,8 @@ function extend_trajectory!(c::CompositeComponent, s::CompositeState, t::Composi
     # If there are no subcomponents, this will never emit an output spike (unless just passing through an input),
     # so we can extend to `Inf` (until we receive an input spike)
     if isempty(c.subcomponents)
-        return CompositeTrajectory([], Inf, false, nothing)
+        @assert trajectory_length(t) == 0 || trajectory_length(t) == Inf
+        return CompositeTrajectory(t.subtrajectories, Inf, false, nothing)
     end
 
     trajectories = t.subtrajectories
@@ -512,7 +516,7 @@ function extend_trajectory!(c::CompositeComponent, s::CompositeState, t::Composi
     # extend trajectories & note which 
     for (key, subcomp) in pairs(c.subcomponents)
         new_traj = try
-             extend_trajectory!(subcomp, s.substates[key], trajectories[key])
+            extend_trajectory!(subcomp, s.substates[key], trajectories[key])
         catch e
             @error "Error when extending traj for  $key" exception=(e, catch_backtrace())
         end
