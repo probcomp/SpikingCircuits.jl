@@ -1,4 +1,5 @@
 module SpikingCircuits
+
 import Circuits
 
 """
@@ -31,6 +32,7 @@ include("input_function_poisson.jl")
 
 include("spiketrain_viz.jl")
 
+export flatten_component
 export Spiking, SpikingSimulator, SpikeWire
 export OnOffPoissonNeuron, IntegratingPoisson, InputFunctionPoisson
 export SpiketrainViz
