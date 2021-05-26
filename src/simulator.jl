@@ -699,8 +699,8 @@ function handle_spike!(c, s, t, receiver::CompIn, outspikes, spike_queue, f)
     cn = receiver.comp_name
     oldstate = s[cn]
     s[cn], t[cn], out_spike_names = receive_input_spike!(
-                                                         c.subcomponents[cn], s[cn], t[cn], receiver.in_name,
-                                                         nest_callback(f, cn)
+            c.subcomponents[cn], s[cn], t[cn], receiver.in_name,
+            nest_callback(f, cn)
                                                         )
     for outname in out_spike_names
         enqueue!(spike_queue, CompOut(cn, outname))
