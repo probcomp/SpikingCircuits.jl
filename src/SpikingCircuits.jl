@@ -14,6 +14,8 @@ Circuits.compiles_to_binary(::Circuits.Value, ::Spiking) = true
 
 ### Simulator ###
 include("simulator.jl")
+using .SpikingSimulator
+import .SpikingSimulator: flatten, to_indexed_vals
 const Sim = SpikingSimulator
 
 ##############
@@ -32,7 +34,7 @@ include("input_function_poisson.jl")
 
 include("spiketrain_viz.jl")
 
-export flatten_component
+export flatten, to_indexed_vals
 export Spiking, SpikingSimulator, SpikeWire
 export OnOffPoissonNeuron, IntegratingPoisson, InputFunctionPoisson
 export SpiketrainViz
