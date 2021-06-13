@@ -669,6 +669,7 @@ function handle_spike!(c, s, t, receiver::CompIn, outspikes, spike_queue, f)
 end
 handle_spike!(_, _, _, r::Union{Input, CompOut}, _, _, _) = false
 
+using Circuits
 include("utils.jl")
 export flatten, to_indexed_vals
 
