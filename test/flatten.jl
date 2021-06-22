@@ -39,6 +39,8 @@ Circuits.outputs(::PlaceholderNeuron) = CompositeValue((out = SpikeWire(),),)
     outer_impl = Circuits.memoized_implement_deep(outer_comp, 
                                                   Spiking())
     flattened = Circuits.flatten(outer_impl)
+    @test first(flattened.subcomponents) == PlaceholderNeuron()
     flattened = Circuits.flatten(outer_comp)
     flat_impl = Circuits.memoized_implement_deep(flattened, Spiking())
+    @test first(flattened.subcomponents) == PlaceholderNeuron()
 end
