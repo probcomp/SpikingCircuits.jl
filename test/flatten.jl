@@ -12,7 +12,7 @@ struct PlaceholderNeuron <: PrimitiveComponent{Spiking} end
 Circuits.inputs(::PlaceholderNeuron) = IndexedValues(SpikeWire() for _ in 1 : 1)
 Circuits.outputs(::PlaceholderNeuron) = CompositeValue((out = SpikeWire(),),)
 
-@testset "flatten - unroll inner component" begin
+@testset "flatten - unroll recurrence" begin
     inner_comp = CompositeComponent(
         CompositeValue((SpikeWire(), SpikeWire(), SpikeWire())),
         CompositeValue((SpikeWire(), SpikeWire(), SpikeWire())),
@@ -34,8 +34,11 @@ Circuits.outputs(::PlaceholderNeuron) = CompositeValue((out = SpikeWire(),),)
             CompOut(:subcomp, 3) => Output(1)
         )
     )
-
+  
+    # Both ways.
+    outer_impl = Circuits.memoized_implement_deep(outer_comp, 
+                                                  Spiking())
+    flattened = Circuits.flatten(outer_impl)
     flattened = Circuits.flatten(outer_comp)
-    println(Circuits.inputs(flattened))
-    println(Circuits.outputs(flattened))
+    flat_impl = Circuits.memoized_implement_deep(flattened, Spiking())
 end
