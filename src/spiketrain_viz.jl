@@ -1,6 +1,6 @@
 module SpiketrainViz
-using GLMakie, AbstractPlotting, Colors
-AbstractPlotting.inline!(false)
+using GLMakie, Colors
+GLMakie.inline!(false)
 
 export draw_spiketrain_figure, get_spiketrain_figure
 
