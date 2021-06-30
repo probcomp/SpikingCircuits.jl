@@ -349,12 +349,9 @@ function simulate_for_time(
         extending_by = trajectory_length(t)
         # println("Extended by $extending_by")
 
-        if trajectory_length(t) == Inf
-            break;
-        end
         time_to_next_input = next_inputs[1] - time_passed
         @assert time_to_next_input ≥ 0.
-        if trajectory_length(t) ≥ time_to_next_input
+        if trajectory_length(t) ≥ time_to_next_input && isfinite(time_to_next_input)
             # println("Feeding in input[s] $(next_inputs[2])")
             extending_by = time_to_next_input
             (s, t, _) = advance_time_by!(c, s, t, time_to_next_input, (itr, t) -> filtered_callback(itr, t + time_passed))
@@ -371,6 +368,10 @@ function simulate_for_time(
             next_inputs, inputs = isempty(inputs) ? ((Inf, ()), ()) : Iterators.peel(inputs)
             println("Just delivered inputs at time $(time_passed + time_to_next_input).  Next inputs delivered at time $(next_inputs[1]).")
         else
+            if trajectory_length(t) == Inf
+                break;
+            end
+    
             (s, t, _) = advance_time_by!(c, s, t, trajectory_length(t), (itr, t) -> filtered_callback(itr, t + time_passed))
         end
         time_passed += extending_by
