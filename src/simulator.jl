@@ -366,7 +366,7 @@ function simulate_for_time(
             end
 
             next_inputs, inputs = isempty(inputs) ? ((Inf, ()), ()) : Iterators.peel(inputs)
-            println("Just delivered inputs at time $(time_passed + time_to_next_input).  Next inputs delivered at time $(next_inputs[1]).")
+            # println("Just delivered inputs at time $(time_passed + time_to_next_input).  Next inputs delivered at time $(next_inputs[1]).")
         else
             if trajectory_length(t) == Inf
                 break;
@@ -486,6 +486,7 @@ function Base.show(io::IO, t::CompositeTrajectory)
 end
 
 to_mutable_version_map(f, t::Tuple, T) = T[f(x) for x in t]
+to_mutable_version_map(f, t::Vector, T) = T[f(x) for x in t]
 to_mutable_version_map(f, nt::NamedTuple, T) = Dict{Symbol, T}(key => f(val) for (key, val) in pairs(nt))
 
 # state_type(...)
