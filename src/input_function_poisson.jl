@@ -67,7 +67,10 @@ Sim.next_spike(::InputFunctionPoisson, ::Sim.NextSpikeTrajectory) = :out
 
 _sample_spike(p::InputFunctionPoisson, st::InputTimesState) =
     let λ = rate(p, st)
-        λ == Inf ? 0. : exponential(λ)
+        !(λ ≥ 0) ? error("Got negative rate: $(λ)!") :
+        λ == 0   ? Inf                               :
+        λ == Inf ? 0.                                :
+                   exponential(λ)
     end
 
 function Sim.extend_trajectory!(p::InputFunctionPoisson, st::InputTimesState, ::Sim.EmptyTrajectory)
