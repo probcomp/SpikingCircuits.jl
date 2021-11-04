@@ -1,6 +1,6 @@
 module SpiketrainViz
 using GLMakie, Colors
-GLMakie.inline!(false)
+#GLMakie.inline!(false)
 
 export draw_spiketrain_figure, get_spiketrain_figure
 

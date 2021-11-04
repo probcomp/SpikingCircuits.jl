@@ -6,13 +6,13 @@
 #         - (goes back in for a finite number of cycles).
 #
 # TODO: also output some data structure which lets us lookup
-# the nested name for a neuron before flattening.
+# the nested name for a neuron before inlineing.
 
 struct PlaceholderNeuron <: PrimitiveComponent{Spiking} end
 Circuits.inputs(::PlaceholderNeuron) = IndexedValues(SpikeWire() for _ in 1 : 1)
 Circuits.outputs(::PlaceholderNeuron) = CompositeValue((out = SpikeWire(),),)
 
-@testset "flatten - unroll recurrence" begin
+@testset "inline - unroll recurrence" begin
     inner_comp = CompositeComponent(
         CompositeValue((SpikeWire(), SpikeWire(), SpikeWire())),
         CompositeValue((SpikeWire(), SpikeWire(), SpikeWire())),
@@ -36,11 +36,10 @@ Circuits.outputs(::PlaceholderNeuron) = CompositeValue((out = SpikeWire(),),)
     )
   
     # Both ways.
-    outer_impl = Circuits.memoized_implement_deep(outer_comp, 
-                                                  Spiking())
-    flattened = Circuits.flatten(outer_impl)
-    @test first(flattened.subcomponents) == PlaceholderNeuron()
-    flattened = Circuits.flatten(outer_comp)
-    flat_impl = Circuits.memoized_implement_deep(flattened, Spiking())
-    @test first(flattened.subcomponents) == PlaceholderNeuron()
+    outer_impl = Circuits.memoized_implement_deep(outer_comp, Spiking())
+    inlined, _, _ = Circuits.inline(outer_impl)
+    @test first(inlined.subcomponents) == PlaceholderNeuron()
+    inlined, _, _ = Circuits.inline(outer_comp)
+    flat_impl = Circuits.memoized_implement_deep(inlined, Spiking())
+    @test first(inlined.subcomponents) == PlaceholderNeuron()
 end

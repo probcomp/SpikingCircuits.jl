@@ -486,6 +486,7 @@ function Base.show(io::IO, t::CompositeTrajectory)
 end
 
 to_mutable_version_map(f, t::Tuple, T) = T[f(x) for x in t]
+to_mutable_version_map(f, t::Vector, T) = T[f(x) for x in t]
 to_mutable_version_map(f, nt::NamedTuple, T) = Dict{Symbol, T}(key => f(val) for (key, val) in pairs(nt))
 
 # state_type(...)

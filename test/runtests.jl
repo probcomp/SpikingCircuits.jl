@@ -3,11 +3,11 @@ module TestSpikingCircuits
 using Test
 using SpikingCircuits
 import Circuits
-using Circuits: flatten, PrimitiveComponent, 
+using Circuits: inline, PrimitiveComponent, 
                 CompositeValue, CompIn, CompOut,
                 Input, Output, CompositeComponent,
                 PrimitiveValue, IndexedValues
 
-include("flatten.jl")
+include("inline.jl")
 
 end # module
